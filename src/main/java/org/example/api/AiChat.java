@@ -27,18 +27,6 @@ public class AiChat {
         conversation.add(new SystemMessage(systemMessageString));
     }
 
-    private static class ChatRequest {
-        private String message;
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-    }
-
     private String getChatCompletion(String message) {
         log.info("Sending prompt to AI model: '{}'", message);
         try {
@@ -52,18 +40,21 @@ public class AiChat {
 
     @PostMapping("/chat")
     public ResponseEntity<String> chat(@RequestBody ChatRequest chatRequest) {
-        if (chatRequest == null || chatRequest.getMessage() == null ||  chatRequest.getMessage().isBlank()) {
+        if (chatRequest == null || chatRequest.message() == null ||  chatRequest.message().isBlank()) {
             log.warn("Received empty or null message.");
             return ResponseEntity.badRequest().body("Message cannot be empty.");
         }
 
-        log.info("Processing chat request: '{}'", chatRequest.getMessage());
+        log.info("Processing chat request: '{}'", chatRequest.message());
         try {
-            String response = getChatCompletion(chatRequest.getMessage());
+            String response = getChatCompletion(chatRequest.message());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Could not communicate with Ai service");
         }
+    }
+
+    private record ChatRequest(String message) {
     }
 }
