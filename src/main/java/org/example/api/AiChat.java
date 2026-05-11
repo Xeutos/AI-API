@@ -19,12 +19,11 @@ public class AiChat {
 
     private final ChatModel chatModel;
     private final List<Message> conversation = new ArrayList<>();
-    private final String systemMessageString = "You are a coder, use code examples";
+    private SystemMessage SystemPersonality;
     private static final Logger log = LoggerFactory.getLogger(AiChat.class);
 
     public AiChat(ChatModel chatModel) {
         this.chatModel = chatModel;
-        conversation.add(new SystemMessage(systemMessageString));
     }
 
     private String getChatCompletion(String message) {
@@ -39,7 +38,7 @@ public class AiChat {
     }
 
     @PostMapping("/chat")
-    public ResponseEntity<String> chat(@RequestBody ChatRequest chatRequest) {
+    public ResponseEntity<String> chat(@RequestBody ChatRequest chatRequest, @RequestBody Personality personality) {
         if (chatRequest == null || chatRequest.message() == null ||  chatRequest.message().isBlank()) {
             log.warn("Received empty or null message.");
             return ResponseEntity.badRequest().body("Message cannot be empty.");
@@ -47,6 +46,8 @@ public class AiChat {
 
         log.info("Processing chat request: '{}'", chatRequest.message());
         try {
+            if (SystemPersonality == null)
+                SystemPersonality = new SystemMessage(personality.personality);
             String response = getChatCompletion(chatRequest.message());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -55,6 +56,7 @@ public class AiChat {
         }
     }
 
-    private record ChatRequest(String message) {
-    }
+    public record ChatRequest(String message) {}
+
+    public record Personality(String personality){}
 }
