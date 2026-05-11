@@ -8,7 +8,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.resilience.annotation.Retryable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,26 +41,31 @@ public class AiChat {
         }
     }
 
+    @Retryable
     @PostMapping("/chat")
     public ResponseEntity<String> chat(@RequestBody ChatRequest chatRequest, @RequestBody Personality personality) {
-        if (chatRequest == null || chatRequest.message() == null ||  chatRequest.message().isBlank()) {
+        if (chatRequest == null || chatRequest.message() == null || chatRequest.message().isBlank()) {
             log.warn("Received empty or null message.");
             return ResponseEntity.badRequest().body("Message cannot be empty.");
         }
 
         log.info("Processing chat request: '{}'", chatRequest.message());
         try {
-            if (SystemPersonality == null)
+            if (SystemPersonality == null) {
                 SystemPersonality = new SystemMessage(personality.personality);
-            String response = getChatCompletion(chatRequest.message());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Could not communicate with Ai service");
+                conversation.add(SystemPersonality);
+            }
+                String response = getChatCompletion(chatRequest.message());
+                return ResponseEntity.ok(response);
+            } catch(Exception e){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Could not communicate with Ai service");
+            }
+        }
+
+        public record ChatRequest(String message) {
+        }
+
+        public record Personality(String personality) {
         }
     }
-
-    public record ChatRequest(String message) {}
-
-    public record Personality(String personality){}
-}
