@@ -10,8 +10,8 @@ API_KEY=YourKeyHere
 
 ## API Endpoint
 
-```
 To call the AI model, use the following endpoint:
 
+```
 /api/v1/chat
 ```
